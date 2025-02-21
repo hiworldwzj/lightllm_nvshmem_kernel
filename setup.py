@@ -3,8 +3,11 @@ import subprocess
 import os
 
 # Build the C++ library
-subprocess.call(['cmake', '.'])
-subprocess.call(['make'])
+if subprocess.call(['cmake', '.']) != 0:
+    assert False, "error cmake"
+    
+if subprocess.call(['make']) != 0:
+    assert False, "error make"
 
 # Define the extension module
 # my_library_extension = Extension(

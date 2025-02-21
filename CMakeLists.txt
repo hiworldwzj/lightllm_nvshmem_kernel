@@ -11,8 +11,10 @@ set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -rdc=true -gencode arch=compute_90,cod
 
 include_directories(/usr/include/nvshmem_12/)
 link_directories(/usr/lib64/nvshmem/12/)
+link_directories(/usr/local/cuda-12.4/targets/x86_64-linux/lib/)
 
 
 # 添加可执行目标
 add_library(lightllm_nvshmem_kernel SHARED ./src/kernel.cpp)
 set_target_properties(lightllm_nvshmem_kernel PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
+target_link_libraries(lightllm_nvshmem_kernel nvshmem_host nvshmem_device cudart)
