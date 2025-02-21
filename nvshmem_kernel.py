@@ -2,8 +2,8 @@ import ctypes
 import os
 
 # 加载C++库
-print(os.path.join(os.path.dirname(__file__), 'libmy_library.so'))
-lib = ctypes.CDLL(os.path.join(os.path.dirname(__file__), 'libmy_library.so'))
+print(os.path.join(os.path.dirname(__file__), 'liblightllm_nvshmem_kernel.so'))
+lib = ctypes.CDLL(os.path.join(os.path.dirname(__file__), 'liblightllm_nvshmem_kernel.so'))
 
 # 定义函数原型
 lib.add.argtypes = (ctypes.c_int, ctypes.c_int)

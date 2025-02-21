@@ -1,18 +1,18 @@
-cmake_minimum_required(VERSION 3.10)
-project(lightllm_nvshmem_kernel)
+cmake_minimum_required(VERSION 3.18)
+set(CMAKE_CUDA_ARCHITECTURES "90")
+set(CMAKE_CUDA_COMPILER /usr/local/cuda-12.4/bin/nvcc)
+project(lightllm_nvshmem_kernel LANGUAGES CXX CUDA)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+# 设置 CUDA 相关的选项
+set(CMAKE_CUDA_STANDARD 14)  # 设置 CUDA 标准
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -rdc=true -gencode arch=compute_90,code=sm_90 -ccbin g++")
 
-# # 查找Python模块
-# find_package(PythonLibs REQUIRED)
 
-# include_directories(${PYTHON_INCLUDE_DIRS})
-# link_directories(${PYTHON_LIBRARIES})
-include_directories(./src/)
+include_directories(/usr/include/nvshmem_12/)
+link_directories(/usr/lib64/nvshmem/12/)
 
-# 添加库
-add_library(my_library SHARED src/my_library.cpp)
 
-# 将库与Python链接
-# set_target_properties(my_library PROPERTIES PREFIX "lib")
-# set_target_properties(my_library PROPERTIES SUFFIX ".so")
+# 添加可执行目标
+add_library(lightllm_nvshmem_kernel SHARED ./src/kernel.cpp)
+set_target_properties(lightllm_nvshmem_kernel PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
