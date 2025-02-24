@@ -5,37 +5,61 @@ import os
 print(os.path.join(os.path.dirname(__file__), 'liblightllm_nvshmem_kernel.so'))
 lib = ctypes.CDLL(os.path.join(os.path.dirname(__file__), 'liblightllm_nvshmem_kernel.so'))
 
-# 定义函数原型
-lib.add.argtypes = (ctypes.c_int, ctypes.c_int)
-lib.add.restype = ctypes.c_int
 
-def add(a, b):
-    return lib.add(a, b)
-
-
-lib.init_nvshmemx_communication_ids.argtypes = (ctypes.POINTER(ctypes.c_char), ctypes.POINTER(ctypes.c_int))
+lib.init_nvshmemx_communication_ids.argtypes = (ctypes.POINTER(ctypes.c_char),)
 lib.init_nvshmemx_communication_ids.restype = None
 
-lib.init_nvshmemx_env.argtypes = (ctypes.c_int, ctypes.c_int, ctypes.POINTER(ctypes.c_char), ctypes.POINTER(ctypes.c_int))
+lib.init_nvshmemx_env.argtypes = (ctypes.c_int, ctypes.c_int, ctypes.POINTER(ctypes.c_char))
 lib.init_nvshmemx_env.restype = None
 
-data = (ctypes.c_char * 1024)()
-length = ctypes.c_int()
+lib.nvshmem_alloc_int32.argtypes = (ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int)
+lib.nvshmem_alloc_int32.restype = ctypes.POINTER(ctypes.c_int)
 
-if not os.path.exists("./key.txt"):
-    rank = 0
-    world = 2
-    lib.init_nvshmemx_communication_ids(data, ctypes.byref(length))
-    print(bytes(data), length)
-    with open("./key.txt", mode="wb") as file:
-        file.write(data[0:length.value])
+lib.nvshmem_alloc_int16.argtypes = (ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int)
+lib.nvshmem_alloc_int16.restype = ctypes.POINTER(ctypes.c_short)
+
+lib.nvshmem_alloc_int8.argtypes = (ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int)
+lib.nvshmem_alloc_int8.restype = ctypes.POINTER(ctypes.c_char)
+
+
+def init_nvshmemx_communication_ids(data):
+    """
+    data: ctypes.c_char * 1024
+    return None
     
-    lib.init_nvshmemx_env(0, 2, data, ctypes.byref(length))
-else:
-    with open("./key.txt", mode="rb") as file:
-        init_id_datas = file.read()
-    for i in range(len(init_id_datas)):
-        data[i] = init_id_datas[i]
-    lib.init_nvshmemx_env(1, 2, data, ctypes.byref(length))
+    demo input :
+    data = (ctypes.c_char * 1024)()
+    """
+    lib.init_nvshmemx_communication_ids(data)
+    return
 
-print(bytes(data), length)
+def init_nvshmemx_env(rank:int, global_world_size:int, init_param):
+    """
+    init_param: ctypes.c_char * 1024
+    return None
+    """
+    lib.init_nvshmemx_env(rank, global_world_size, init_param)
+    return
+
+def nvshmem_alloc_int32(a, b=1, c=1, d=1, dim=1):
+    """
+    return ctypes.POINTER(ctypes.c_int)
+    """
+    
+    return lib.nvshmem_alloc_int32(a, b, c, d, dim)
+
+def nvshmem_alloc_int16(a, b=1, c=1, d=1, dim=1):
+    """
+    return ctypes.POINTER(ctypes.c_short)
+    """
+    
+    return lib.nvshmem_alloc_int16(a, b, c, d, dim)
+    
+    
+def nvshmem_alloc_int8(a, b=1, c=1, d=1, dim=1):
+    """
+    return ctypes.POINTER(ctypes.c_char)
+    """
+    
+    return lib.nvshmem_alloc_int8(a, b, c, d, dim)
+

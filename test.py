@@ -1,28 +1,35 @@
-from ctypes import *
+import os
+import ctypes
+from nvshmem_kernel import init_nvshmemx_communication_ids, init_nvshmemx_env
+import argparse
 
-# 加载共享库
-# lib = CDLL('./example.so')  # 根据实际文件名调整
+def main():
+    # 创建解析器
+    parser = argparse.ArgumentParser(description="Process some integers.")
+    
+    # 添加参数
+    parser.add_argument('--rank', type=int, help='')
+    parser.add_argument('--world_size', type=int, help='world_size')
 
-# # 定义 C 函数的参数类型
-# lib.process_data.argtypes = (POINTER(c_ubyte), c_int)
+    # 解析参数
+    args = parser.parse_args()
 
-# 创建 bytearray
-data = bytearray([1, 2, 3, 4, 5])
-length = len(data)
-
-# 将 bytearray 转换为 ctypes 类型
-
-data_pointer = (c_ubyte * length)(*data)
-print(type(data_pointer))
-
-data_pointer[0] = 20
-
-# 调用 C 函数
-# lib.process_data(data_pointer, length)
-
-# 获取处理后的结果
-result = bytearray(data_pointer)
-
-print(result)  # 输出处理后的数据
-
-print(data)
+    init_data = (ctypes.c_char * 1024)()
+    
+    if args.rank == 0:
+        init_nvshmemx_communication_ids(init_data)
+        print(bytes(init_data))
+        with open("./key.txt", mode="wb") as file:
+            file.write(init_data[:])
+        
+        init_nvshmemx_env(args.rank, args.world_size, init_data)
+    else:
+        with open("./key.txt", mode="rb") as file:
+            init_id_datas = file.read()
+        for i in range(len(init_id_datas)):
+            init_data[i] = init_id_datas[i]
+        init_nvshmemx_env(args.rank, args.world_size, init_data)
+        
+        
+if __name__ == "__main__":
+    main()
