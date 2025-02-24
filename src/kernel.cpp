@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "nvshmem.h"
 #include "nvshmemx.h"
+#include <mpi.h>
 #include <cassert>
 
 extern "C" int add(int a, int b) {
@@ -9,6 +10,7 @@ extern "C" int add(int a, int b) {
 
 nvshmemx_init_attr_t attr = NVSHMEMX_INIT_ATTR_INITIALIZER;
 nvshmemx_uniqueid_t id = NVSHMEMX_UNIQUEID_INITIALIZER;
+MPI_Comm local_self = MPI_COMM_WORLD;
 
 // 该接口只能 rank 0 进行调用, 用于初始化通信 id 的信息
 extern "C" void init_nvshmemx_communication_ids(char * init_param) {
@@ -18,6 +20,65 @@ extern "C" void init_nvshmemx_communication_ids(char * init_param) {
         init_param[i] = data[i];
     }
 }
+
+extern "C" void nvshmemx_mpi_port_name(char * port_name, int port_length) {
+    MPI_Init(NULL, NULL);
+    assert(MPI_MAX_PORT_NAME <= port_length);
+    MPI_Open_port(MPI_INFO_NULL, port_name);
+    printf("init_nvshmemx_mpi Port: %s\n", port_name);
+}
+
+extern "C" void init_nvshmemx_mpi(int rank, int global_world_size, char * port_name, int port_length) {
+    assert(MPI_MAX_PORT_NAME <= port_length);
+    local_self = MPI_COMM_WORLD;
+
+    if(rank == 0) {
+
+        MPI_Comm client_comm;
+        MPI_Comm new_client_comm;
+        for (int i = 0; i < global_world_size - 1 - rank; i++) {
+            MPI_Comm_accept(port_name, MPI_INFO_NULL, 0, local_self, &client_comm);
+            printf("Accepted connection from client %d\n", rank + i + 1);
+            MPI_Intercomm_merge(client_comm, 0, &new_client_comm);
+            int new_rank;
+            MPI_Comm_rank(new_client_comm, &new_rank);
+            printf("init_nvshmemx_mpi new_rank %d\n", new_rank);
+            local_self = new_client_comm;
+        }
+
+    } else {
+
+        MPI_Init(NULL, NULL);
+        MPI_Comm server_comm;
+        MPI_Comm_connect(port_name, MPI_INFO_NULL, 0, local_self, &server_comm);
+        int new_rank;
+        MPI_Comm new_server_comm;
+        MPI_Intercomm_merge(server_comm, 1, &new_server_comm);
+        MPI_Comm_rank(new_server_comm, &new_rank);
+        printf("init_nvshmemx_mpi new_rank %d\n", new_rank);
+        local_self = new_server_comm;
+        MPI_Comm client_comm;
+        MPI_Comm new_client_comm;
+
+        for (int i = 0; i <  global_world_size - 1 - rank; i++) {
+            MPI_Comm_accept(port_name, MPI_INFO_NULL, 0, local_self, &client_comm);
+            printf("Accepted connection from client %d\n", rank + i + 1);
+            MPI_Intercomm_merge(client_comm, 0, &new_client_comm);
+            MPI_Comm_rank(new_client_comm, &new_rank);
+            printf("init_nvshmemx_mpi new_rank %d", new_rank);
+            local_self = new_client_comm;
+        }
+        printf("connect ok\n");
+    }
+ 
+    attr.mpi_comm = &local_self;
+    nvshmemx_init_attr(NVSHMEMX_INIT_WITH_MPI_COMM, &attr);
+    printf("wzj ok\n");
+    
+    return;
+}
+
+
 
 extern "C" void init_nvshmemx_env(int rank, int global_world_size, char * init_param) {
     char * data = (char *)&id;
