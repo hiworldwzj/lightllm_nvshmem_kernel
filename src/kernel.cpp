@@ -14,6 +14,7 @@ MPI_Comm local_self = MPI_COMM_WORLD;
 
 // 该接口只能 rank 0 进行调用, 用于初始化通信 id 的信息
 extern "C" void init_nvshmemx_communication_ids(char * init_param) {
+    id = NVSHMEMX_UNIQUEID_INITIALIZER;
     nvshmemx_get_uniqueid(&id);
     char * data = (char *)&id;
     for(int i = 0; i < sizeof(nvshmemx_uniqueid_t); i++) {
@@ -80,15 +81,17 @@ extern "C" void init_nvshmemx_mpi(int rank, int global_world_size, char * port_n
 
 
 
-extern "C" void init_nvshmemx_env(int rank, int global_world_size, char * init_param) {
+extern "C" void init_nvshmemx_uid(int rank, int global_world_size, int current_device_id, char * init_param) {
     char * data = (char *)&id;
     for(int i = 0; i < sizeof(nvshmemx_uniqueid_t); i++) {
         data[i] = init_param[i];
     }
-
+    attr = NVSHMEMX_INIT_ATTR_INITIALIZER;
     nvshmemx_set_attr_uniqueid_args(rank, global_world_size, &id, &attr);
     nvshmemx_init_attr(NVSHMEMX_INIT_WITH_UNIQUEID, &attr);
-    
+    printf("nvshmemx set current device %d \n", current_device_id);
+    // torch.cuda.set_device 不能在这里使其生效，所以需要单独再设置一次。切记切记
+    cudaSetDevice(current_device_id);
     return;
 }
 

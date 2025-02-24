@@ -1,7 +1,8 @@
 import os
 import ctypes
-from nvshmem_kernel import init_nvshmemx_communication_ids, init_nvshmemx_env
+from nvshmem_kernel import init_nvshmemx_communication_ids, init_nvshmemx_uid, nvshmem_alloc_int32
 import argparse
+
 
 def main():
     # 创建解析器
@@ -18,18 +19,24 @@ def main():
     
     if args.rank == 0:
         init_nvshmemx_communication_ids(init_data)
-        print(bytes(init_data))
+        # print(bytes(init_data))
         with open("./key.txt", mode="wb") as file:
             file.write(init_data[:])
         
-        init_nvshmemx_env(args.rank, args.world_size, init_data)
+        current_device_id = args.rank
+        init_nvshmemx_uid(args.rank, args.world_size, current_device_id, init_data)
+        print("init ok")
+        nvshmem_alloc_int32(1, dim=1)
     else:
         with open("./key.txt", mode="rb") as file:
             init_id_datas = file.read()
         for i in range(len(init_id_datas)):
             init_data[i] = init_id_datas[i]
-        init_nvshmemx_env(args.rank, args.world_size, init_data)
-        
+            
+        current_device_id = args.rank
+        init_nvshmemx_uid(args.rank, args.world_size, current_device_id, init_data)
+        print('init ok')
+        nvshmem_alloc_int32(1, dim=1)
         
 if __name__ == "__main__":
     main()

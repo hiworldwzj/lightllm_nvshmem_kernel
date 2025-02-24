@@ -9,8 +9,8 @@ lib = ctypes.CDLL(os.path.join(os.path.dirname(__file__), 'liblightllm_nvshmem_k
 lib.init_nvshmemx_communication_ids.argtypes = (ctypes.POINTER(ctypes.c_char),)
 lib.init_nvshmemx_communication_ids.restype = None
 
-lib.init_nvshmemx_env.argtypes = (ctypes.c_int, ctypes.c_int, ctypes.POINTER(ctypes.c_char))
-lib.init_nvshmemx_env.restype = None
+lib.init_nvshmemx_uid.argtypes = (ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.POINTER(ctypes.c_char))
+lib.init_nvshmemx_uid.restype = None
 
 lib.init_nvshmemx_mpi.argtypes = (ctypes.c_int, ctypes.c_int, ctypes.POINTER(ctypes.c_char), ctypes.c_int)
 lib.init_nvshmemx_mpi.restype = None
@@ -39,12 +39,12 @@ def init_nvshmemx_communication_ids(data):
     lib.init_nvshmemx_communication_ids(data)
     return
 
-def init_nvshmemx_env(rank:int, global_world_size:int, init_param):
+def init_nvshmemx_uid(rank:int, global_world_size:int, current_device_id:int, init_param):
     """
     init_param: ctypes.c_char * 1024
     return None
     """
-    lib.init_nvshmemx_env(rank, global_world_size, init_param)
+    lib.init_nvshmemx_uid(rank, global_world_size, current_device_id, init_param)
     return
 
 def nvshmemx_mpi_port_name(port_name, port_name_length:int):
